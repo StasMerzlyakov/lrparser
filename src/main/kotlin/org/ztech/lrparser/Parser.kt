@@ -51,15 +51,20 @@ data class Position(
     val position: Int = 0 // Номер положения курсора. Используется при обработке.
 )
 
-// Карта соответствия
-// Нетерминал ->  { допустимый символ to стек продукций до данного символа
-//                  .......
-//                  }
+/**
+ * Карта соответствия
+ * Нетерминал ->  { допустимый символ to стек продукций до данного символа
+ *                 .......
+ *                }
+ * Используется при аналезе. Позволяет определить список допустимых символов и
+ * необходимые продукции для достижения данного символа.
+ */
+
 val PRODUCTION_MAP = mutableMapOf<Char, LinkedHashMap<Char, Stack<Position>>>()
 
 
 /**
- * Функция заполнения PRODUCTION_MAP
+ * Функция заполнения PRODUCTION_MAP.
  */
 fun initProductionMap() {
     for(prod in NON_TERMINAL) {
@@ -71,7 +76,13 @@ fun initProductionMap() {
 }
 
 
-
+/**
+ * Проходимся по  всем продукциям данного нетерминала
+ *    если продукция начинается с терминального символа - добавляем запись о том, что данный терминал достижим
+ *                   из исходного нетерминала по продукции с номером
+ *    если продукция начинается с нетерминального символа - делаем рекурсивное обращение к продукциям
+ *                   нетерминального символа
+ */
 fun checkNonTerminals(nTerm: Char, processed: Stack<Char>, productionMap: MutableMap<Char, LinkedHashMap<Char, Stack<Position>>>) {
     val productions = PRODUCTION[nTerm]!!
     for ((index, prod) in productions.withIndex()) {
