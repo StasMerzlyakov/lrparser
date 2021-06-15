@@ -8,17 +8,17 @@ import kotlin.system.exitProcess
 
 
 // Расширенное множество терминальных символов
-val TERMINAL = listOf('a', 'b', 'c', 'd', 'e', null)
+val TERMINAL = setOf('a', 'b', 'c', 'd', 'e', null)
 
 // Множество нетерминальных симовлов
-val NON_TERMINAL = listOf('S', 'A', 'B', 'C')
+val NON_TERMINAL = setOf('S', 'A', 'B', 'C')
 
 // Множество продукций
 val PRODUCTION = mapOf(
-    'S' to listOf("ab", "bAc", "cdBCa"),
-    'A' to listOf("bAc", "B"),
-    'B' to listOf("dC", null, "Ae"),
-    'C' to listOf("aCb", "d", null)
+    'S' to setOf("ab", "bAc", "cdBCa"),
+    'A' to setOf("bAc", "B"),
+    'B' to setOf("dC", null, "Ae"),
+    'C' to setOf("aCb", "d", null)
 )
 
 // Стартовая продукция
@@ -37,14 +37,6 @@ interface ITokenizer : PeekIterator<Char> {
     open fun processError(errorToken: Char?, expected: List<Char>)
 }
 
-// Список символов, с которых могут начинаться терминальные символы
-val NON_TERMINAL_STARTS = mapOf<Char, MutableSet<Char?>>(
-    'S' to mutableSetOf(),
-    'A' to mutableSetOf(),
-    'B' to mutableSetOf(),
-    'C' to mutableSetOf(),
-)
-
 data class Position(
     val nTerm: Char, // Продукция (нетерминальный символ)
     val production: Int, // Номер продукции данного терминала
@@ -56,12 +48,11 @@ data class Position(
  * Нетерминал ->  { допустимый символ to стек продукций до данного символа
  *                 .......
  *                }
- * Используется при аналезе. Позволяет определить список допустимых символов и
+ * Используется при аналезе. Позволяет определить список допустимых символов в данном положении и
  * необходимые продукции для достижения данного символа.
  */
 
 val PRODUCTION_MAP = mutableMapOf<Char, LinkedHashMap<Char, Stack<Position>>>()
-
 
 /**
  * Функция заполнения PRODUCTION_MAP.
@@ -152,28 +143,6 @@ fun checkNonTerminals(nTerm: Char, processed: Stack<Char>, productionMap: Mutabl
     }
 }
 
-
-/**
- * Функция обработки множеств TERMINAL, NON_TERMINAL, PRODUCTION для генерации множеств символов,
- * с которых могут начинаться нетерминальные символы
- */
-fun getNonTerminals(nTerm: Char): Set<Char?> {
-    val productions = PRODUCTION[nTerm]!!
-    val result = mutableSetOf<Char?>()
-
-    for (prod in productions) {
-        when (val first = prod?.first()) {
-            in TERMINAL -> result.add(first)
-            in NON_TERMINAL -> if (NON_TERMINAL_STARTS[first]!!.isEmpty()) {
-                result.addAll(getNonTerminals(first!!))
-            } else {
-                result.addAll(NON_TERMINAL_STARTS[first]!!)
-            }
-        }
-    }
-    NON_TERMINAL_STARTS[nTerm]!!.addAll(result)
-    return result
-}
 
 
 
