@@ -8,6 +8,7 @@ import java.util.NoSuchElementException
  */
 typealias Stack<T> = MutableList<T>
 
+
 /**
  * Добавляение элемента в стэк.
  * @param item добавялемый элемент
