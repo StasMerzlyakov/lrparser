@@ -37,6 +37,9 @@ interface ITokenizer : PeekIterator<Char> {
     open fun processError(errorToken: Char?, expected: List<Char>)
 }
 
+/**
+ * Тип данных, используемый при разборе.
+ */
 data class Position(
     val nTerm: Char, // Продукция (нетерминальный символ)
     val production: Int, // Номер продукции данного терминала
@@ -58,7 +61,7 @@ val PRODUCTION_MAP = mutableMapOf<Char, LinkedHashMap<Char, Stack<Position>>>()
  * Функция заполнения PRODUCTION_MAP.
  */
 fun initProductionMap() {
-    for(prod in NON_TERMINAL) {
+    for (prod in NON_TERMINAL) {
         val productionMap = mutableMapOf<Char, LinkedHashMap<Char, Stack<Position>>>()
         val processed = mutableListOf<Char>()
         checkNonTerminals(prod, processed, productionMap)
@@ -74,7 +77,23 @@ fun initProductionMap() {
  *    если продукция начинается с нетерминального символа - делаем рекурсивное обращение к продукциям
  *                   нетерминального символа
  */
-fun checkNonTerminals(nTerm: Char, processed: Stack<Char>, productionMap: MutableMap<Char, LinkedHashMap<Char, Stack<Position>>>) {
+fun checkNonTerminals(
+    /**
+     * Проверяемый нетерминал
+     */
+    nTerm: Char,
+    /**
+     * Стек обработанных нетерминалов. Нужен для исключения рекурсии при обработке правил типа
+     * A -> Bc
+     * ...
+     * B -> Ad
+     */
+    processed: Stack<Char>,
+    /**
+     * Формируемая карта продукций
+     */
+    productionMap: MutableMap<Char, LinkedHashMap<Char, Stack<Position>>>
+) {
     val productions = PRODUCTION[nTerm]!!
     for ((index, prod) in productions.withIndex()) {
         when (val first = prod?.first()) {
