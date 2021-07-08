@@ -7,7 +7,7 @@ import kotlin.system.exitProcess
  */
 
 
-// Расширенное множество терминальных символов
+// Расширенное множество терминальных символов (с null)
 val TERMINAL = setOf('a', 'b', 'c', 'd', 'e', null)
 
 // Множество нетерминальных симовлов
@@ -43,7 +43,7 @@ interface ITokenizer : PeekIterator<Char> {
 data class Position(
     val nTerm: Char, // Продукция (нетерминальный символ)
     val production: Int, // Номер продукции данного терминала
-    val position: Int = 0 // Номер положения курсора. Используется при обработке.
+    var position: Int = 0 // Номер положения курсора. Используется при обработке.
 )
 
 /**
