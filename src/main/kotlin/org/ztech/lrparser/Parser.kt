@@ -40,7 +40,7 @@ interface ITokenizer : PeekIterator<Char> {
 /**
  * Тип данных, используемый при разборе.
  */
-data class Position(
+data class Production(
     val nTerm: Char, // Продукция (нетерминальный символ)
     val production: Int, // Номер продукции данного терминала
     var position: Int = 0 // Номер положения курсора. Используется при обработке.
@@ -55,14 +55,14 @@ data class Position(
  * необходимые продукции для достижения данного символа.
  */
 
-val PRODUCTION_MAP = mutableMapOf<Char, LinkedHashMap<Char, Stack<Position>>>()
+val PRODUCTION_MAP = mutableMapOf<Char, LinkedHashMap<Char, Stack<Production>>>()
 
 /**
  * Функция заполнения PRODUCTION_MAP.
  */
 fun initProductionMap() {
     for (prod in NON_TERMINAL) {
-        val productionMap = mutableMapOf<Char, LinkedHashMap<Char, Stack<Position>>>()
+        val productionMap = mutableMapOf<Char, LinkedHashMap<Char, Stack<Production>>>()
         val processed = mutableListOf<Char>()
         checkNonTerminals(prod, processed, productionMap)
         PRODUCTION_MAP[prod] = productionMap[prod]!!
@@ -92,7 +92,7 @@ fun checkNonTerminals(
     /**
      * Формируемая карта продукций
      */
-    productionMap: MutableMap<Char, LinkedHashMap<Char, Stack<Position>>>
+    productionMap: MutableMap<Char, LinkedHashMap<Char, Stack<Production>>>
 ) {
     val productions = PRODUCTION[nTerm]!!
     for ((index, prod) in productions.withIndex()) {
@@ -113,7 +113,7 @@ fun checkNonTerminals(
                     exitProcess(1) // Завершение процесса
                 }
                 productionStack.add(
-                    Position(
+                    Production(
                         nTerm = nTerm,
                         production = index
                     )
@@ -148,7 +148,7 @@ fun checkNonTerminals(
                                 exitProcess(1) // Завершение процесса
                             }
                             productionStack.add(
-                                Position(
+                                Production(
                                     nTerm = nTerm,
                                     production = index
                                 )
@@ -161,6 +161,25 @@ fun checkNonTerminals(
         }
     }
 }
+
+
+/**
+ * Стек позиций. Начинаем со стартовой позиции
+ */
+val PRODUCTION_STACK = mutableListOf<Production>()
+
+/**
+ * Стек допущенных(разобранных) терминалов и нетерминалов
+ */
+val ACCEPTED_STACK = mutableListOf<Char>()
+
+/**
+ * Входноые данные
+ */
+val INPUT_STACK = mutableListOf<Char>()
+
+
+
 
 
 
