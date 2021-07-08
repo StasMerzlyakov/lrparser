@@ -1,5 +1,6 @@
 package org.ztech.lrparser
 
+import java.lang.Exception
 import kotlin.system.exitProcess
 
 /**
@@ -174,20 +175,29 @@ val PRODUCTION_STACK = mutableListOf<Production>()
 val ACCEPTED_STACK = mutableListOf<Char>()
 
 /**
- * Входноые данные
+ * Входные данные
  */
 val INPUT_STACK = mutableListOf<Char>()
 
+/**
+ * Основная функция разбора. Вызывается после инициализации.
+ */
+fun parse() {
+    if (INPUT_STACK.isEmpty()) {
+        if (PRODUCTION_STACK.isEmpty()) {
+            if (ACCEPTED_STACK.size == 1 && ACCEPTED_STACK.peek() == START_PRODUCTION){
+                // Выход. Все отлично.
+                return
+            }
 
+            // Ошибка разбора. Скорее всего ошибка работы парсера.
+            throw Exception("Ошибка разбора. Входной поток пуст. Стек продукций пуст. " +
+                    "Стек допущенных терминалов и нетерминалов: $ACCEPTED_STACK")
+        }
 
+        // Пытаемся сделать свертку
+        val currentProduction = PRODUCTION_STACK.peek()
+        if (currentProduction.position == PRODUCTION[currentProduction.nTerm][currentProduction.production])
 
-
-
-
-
-
-
-
-
-
-
+    }
+}
