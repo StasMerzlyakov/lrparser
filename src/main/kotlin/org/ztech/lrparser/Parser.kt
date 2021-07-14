@@ -7,7 +7,6 @@ import kotlin.system.exitProcess
  * Данный файл должен в будущем генерироваться
  */
 
-
 // Расширенное множество терминальных символов (с null)
 val TERMINAL = listOf('a', 'b', 'c', 'd', 'e', null)
 
@@ -183,66 +182,139 @@ val INPUT_STACK = mutableListOf<Char>()
  * Основная функция разбора. Вызывается после инициализации.
  */
 fun parse() {
-    if (INPUT_STACK.isEmpty()) {
-        if (PRODUCTION_STACK.isEmpty()) {
-            if (ACCEPTED_STACK.size == 1 && ACCEPTED_STACK.peek() == START_PRODUCTION){
-                // Выход. Все отлично.
-                return
+    while (true) {
+        if (INPUT_STACK.isEmpty()) {
+            if (PRODUCTION_STACK.isEmpty()) {
+                if (ACCEPTED_STACK.size == 1 && ACCEPTED_STACK.peek() == START_PRODUCTION) {
+                    // Выход. Все отлично.
+                    return
+                }
+
+                // Ошибка разбора. Скорее всего ошибка работы парсера.
+                throw Exception(
+                    "Ошибка разбора. Входной поток пуст. Стек продукций пуст. " +
+                            "Стек допущенных терминалов и нетерминалов: $ACCEPTED_STACK"
+                )
             }
 
-            // Ошибка разбора. Скорее всего ошибка работы парсера.
-            throw Exception("Ошибка разбора. Входной поток пуст. Стек продукций пуст. " +
-                    "Стек допущенных терминалов и нетерминалов: $ACCEPTED_STACK")
-        }
+            // PRODUCTION_STACK не пустой
+            // Возможно сделать сверту по текущей продукции
+            val currentProduction = PRODUCTION_STACK.peek()!!
 
-        // PRODUCTION_STACK не пустой
-        // Возможно сделать сверту по текущей продукции
-        val currentProduction = PRODUCTION_STACK.peek()!!
+            // Если позиция текущей продукции последняя - делаем свертку
+            if (currentProduction.position == PRODUCTION[currentProduction.nTerm]!![currentProduction.production]!!.length) {
+                // Делаем свертку
+                // TODO вынести в отдельную функцию
+                PRODUCTION_STACK.pop()
 
-        // Если позиция текущей продукции последняя - делаем свертку
-        if (currentProduction.position == PRODUCTION[currentProduction.nTerm]!![currentProduction.production]!!.length) {
-            // Делаем свертку
-            // TODO вынести в отдельную функцию
-            PRODUCTION_STACK.pop()
+                // Заменяем разобранную подтсроку на терминал
+                repeat(currentProduction.position) { ACCEPTED_STACK.pop() }
+                ACCEPTED_STACK.push(currentProduction.nTerm)
+                if (PRODUCTION_STACK.size>0) PRODUCTION_STACK.peek()!!.position++
+                continue
+            }
 
-            // Заменяем разобранную подтсроку на терминал
-            repeat(currentProduction.position) { ACCEPTED_STACK.pop() }
-            ACCEPTED_STACK.push(currentProduction.nTerm)
+            // Скорее всего ошибка разбора xml.
+            // Определяем список допустимых терминалов.
+            val currentSymbol =
+                PRODUCTION[currentProduction.nTerm]!![currentProduction.production]!![currentProduction.position]
 
-            PRODUCTION_STACK.peek()!!.position ++
-            return
-        }
+            val acceptedSymbols = mutableSetOf<Char>()
+            if (currentSymbol in TERMINAL) {
+                // Допустимым может быть только один терминал
+                acceptedSymbols.add(currentSymbol)
+            } else {
+                // currentSymbol - Нетерминал
 
-        // Скорее всего ошибка разбора xml.
-        // Определяем список допустимых терминалов.
-        val currentSymbol = PRODUCTION[currentProduction.nTerm]!![currentProduction.production]!![currentProduction.position]
+                // Возможны два случая:
+                // Если имеется продукция $currentSymbol -> null, то ситуация допустимая, в противном случае - ошибка
+                if (PRODUCTION[currentSymbol]!!.contains(null)) {
+                    // Записываем нетерминал
+                    PRODUCTION_STACK.peek()!!.position++
+                    ACCEPTED_STACK.push(currentSymbol)
+                    continue
+                }
 
-        val acceptedSymbols = mutableSetOf<Char>()
-        if (currentSymbol in TERMINAL) {
-            // Допустимым может быть только один терминал
-            acceptedSymbols.add(currentSymbol)
+                // Если продукции $currentSymbol -> null то ситуация не допустимая.
+                // Допустимыми могут быть все терминалы, с которых может начинаться данный нетерминал.
+                acceptedSymbols.addAll(PRODUCTION_MAP[currentSymbol]!!.keys)
+            }
+            throw Exception("Ошибка разбора xml. Входной поток пуст. Ожидаемые значения: $acceptedSymbols")
         } else {
-            // currentSymbol - Нетерминал
+            // Оцениваем очередной символ
+            val nextChar = INPUT_STACK.peek()
 
-            // Возможны два случая:
-            // Если имеется продукция $currentSymbol -> null, то ситуация допустимая, в противном случае - ошибка
-            if (PRODUCTION[currentSymbol]!!.contains(null)) {
-                // Записываем нетерминал
-                PRODUCTION_STACK.peek()!!.position ++
-                ACCEPTED_STACK.push(currentSymbol)
-                return
+            if (PRODUCTION_STACK.isEmpty()) {
+                // Нужно выбрать правильную продукцию из продукци
+                val accepted = PRODUCTION_MAP[START_PRODUCTION]!!.keys
+                if (nextChar !in accepted){
+                    // Начальная продукация не может начинаться с символа $nextChar
+                    throw Exception("Ошибка разбора xml. Начальная продукция не может начинаться с символа $nextChar." +
+                            " Ожидаемые значения: $accepted")
+                }
+
+                // Добавляем продукции, которые приведут к данному символу
+                PRODUCTION_MAP[START_PRODUCTION]!![nextChar]!!.forEach { PRODUCTION_STACK.push(it) }
             }
 
-            // Если продукции $currentSymbol -> null то ситуация не допустимая.
-            // Допустимыми могут быть все терминалы, с которых может начинаться данный нетерминал.
-            acceptedSymbols.addAll(PRODUCTION_MAP[currentSymbol]!!.keys)
+            val currentProduction = PRODUCTION_STACK.peek()!!
+
+            // Если позиция текущей продукции последняя - делаем свертку
+            if (currentProduction.position == PRODUCTION[currentProduction.nTerm]!![currentProduction.production]!!.length) {
+                // Делаем свертку
+                // TODO вынести в отдельную функцию
+                PRODUCTION_STACK.pop()
+
+                // Заменяем разобранную подтсроку на терминал
+                repeat(currentProduction.position) { ACCEPTED_STACK.pop() }
+                ACCEPTED_STACK.push(currentProduction.nTerm)
+                PRODUCTION_STACK.peek()!!.position++
+                continue
+            }
+
+            // Определяем список допустимых терминалов.
+            val currentSymbol =
+                PRODUCTION[currentProduction.nTerm]!![currentProduction.production]!![currentProduction.position]
+
+            if (currentSymbol in TERMINAL) {
+                // Допустимым может быть только один терминал
+                if (currentSymbol == nextChar) {
+                    // Все хорошо, идем дальше
+                    currentProduction.position ++
+                    ACCEPTED_STACK.push(nextChar)
+                    INPUT_STACK.pop()
+                    continue
+                } else {
+                    // Ошибка разбора xml
+                    throw Exception("Ошибка разбора xml. Допустимый символ $currentSymbol, ожидается $nextChar.")
+                }
+            } else {
+                // currentSymbol - Нетерминал
+
+                // Нужно выбрать правильную продукцию из продукци
+                val accepted = PRODUCTION_MAP[currentSymbol]!!.keys
+                if (nextChar in accepted) {
+                    // Допускаем и идем дальше
+                    // Добавляем продукции, которые приведут к данному символу
+                    PRODUCTION_MAP[START_PRODUCTION]!![nextChar]!!.forEach { PRODUCTION_STACK.push(it) }
+                    PRODUCTION_STACK.peek()!!.position++
+                    ACCEPTED_STACK.push(nextChar!!)
+                    INPUT_STACK.pop()
+                    continue
+                }
+
+                // Следующий символ не допустим.
+                // Если имеется продукция $currentSymbol -> null, то ситуация допустимая, в противном случае - ошибка
+                if (PRODUCTION[currentSymbol]!!.contains(null)) {
+                    // Записываем нетерминал
+                    PRODUCTION_STACK.peek()!!.position++
+                    ACCEPTED_STACK.push(currentSymbol)
+                    continue
+                } else {
+                    // Ошибка разбора xml
+                    throw Exception("Ошибка разбора xml. Ожидаемые значения: $accepted, найден $nextChar")
+                }
+            }
         }
-        throw Exception("Ошибка разбора xml. Входной поток пуст. Ожидаемые значения: $acceptedSymbols")
-    } else {
-
-
-
-
-
     }
 }
