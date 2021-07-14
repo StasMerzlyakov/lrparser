@@ -3,6 +3,7 @@ plugins {
 }
 
 group 'org.ztech'
+name 'lrparser'
 version = rootProject.version
 
 

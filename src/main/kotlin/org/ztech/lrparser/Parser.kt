@@ -9,17 +9,17 @@ import kotlin.system.exitProcess
 
 
 // Расширенное множество терминальных символов (с null)
-val TERMINAL = setOf('a', 'b', 'c', 'd', 'e', null)
+val TERMINAL = listOf('a', 'b', 'c', 'd', 'e', null)
 
 // Множество нетерминальных симовлов
-val NON_TERMINAL = setOf('S', 'A', 'B', 'C')
+val NON_TERMINAL = listOf('S', 'A', 'B', 'C')
 
 // Множество продукций
 val PRODUCTION = mapOf(
-    'S' to setOf("ab", "bAc", "cdBCa"),
-    'A' to setOf("bAc", "B"),
-    'B' to setOf("dC", null, "Ae"),
-    'C' to setOf("aCb", "d", null)
+    'S' to listOf("ab", "bAc", "cdBCa"),
+    'A' to listOf("bAc", "B"),
+    'B' to listOf("dC", null, "Ae"),
+    'C' to listOf("aCb", "d", null)
 )
 
 // Стартовая продукция
@@ -195,9 +195,54 @@ fun parse() {
                     "Стек допущенных терминалов и нетерминалов: $ACCEPTED_STACK")
         }
 
-        // Пытаемся сделать свертку
-        val currentProduction = PRODUCTION_STACK.peek()
-        if (currentProduction.position == PRODUCTION[currentProduction.nTerm][currentProduction.production])
+        // PRODUCTION_STACK не пустой
+        // Возможно сделать сверту по текущей продукции
+        val currentProduction = PRODUCTION_STACK.peek()!!
+
+        // Если позиция текущей продукции последняя - делаем свертку
+        if (currentProduction.position == PRODUCTION[currentProduction.nTerm]!![currentProduction.production]!!.length) {
+            // Делаем свертку
+            // TODO вынести в отдельную функцию
+            PRODUCTION_STACK.pop()
+
+            // Заменяем разобранную подтсроку на терминал
+            repeat(currentProduction.position) { ACCEPTED_STACK.pop() }
+            ACCEPTED_STACK.push(currentProduction.nTerm)
+
+            PRODUCTION_STACK.peek()!!.position ++
+            return
+        }
+
+        // Скорее всего ошибка разбора xml.
+        // Определяем список допустимых терминалов.
+        val currentSymbol = PRODUCTION[currentProduction.nTerm]!![currentProduction.production]!![currentProduction.position]
+
+        val acceptedSymbols = mutableSetOf<Char>()
+        if (currentSymbol in TERMINAL) {
+            // Допустимым может быть только один терминал
+            acceptedSymbols.add(currentSymbol)
+        } else {
+            // currentSymbol - Нетерминал
+
+            // Возможны два случая:
+            // Если имеется продукция $currentSymbol -> null, то ситуация допустимая, в противном случае - ошибка
+            if (PRODUCTION[currentSymbol]!!.contains(null)) {
+                // Записываем нетерминал
+                PRODUCTION_STACK.peek()!!.position ++
+                ACCEPTED_STACK.push(currentSymbol)
+                return
+            }
+
+            // Если продукции $currentSymbol -> null то ситуация не допустимая.
+            // Допустимыми могут быть все терминалы, с которых может начинаться данный нетерминал.
+            acceptedSymbols.addAll(PRODUCTION_MAP[currentSymbol]!!.keys)
+        }
+        throw Exception("Ошибка разбора xml. Входной поток пуст. Ожидаемые значения: $acceptedSymbols")
+    } else {
+
+
+
+
 
     }
 }
