@@ -58,6 +58,17 @@ data class Production(
 val PRODUCTION_MAP = mutableMapOf<Char, LinkedHashMap<Char, Stack<Production>>>()
 
 /**
+ * Список нуллабельных нетерминалов.
+ * (Нетерминальных символов, которые могут быть выведены из null:
+ *   то есть
+ *     A -> null, либо рекурсии вида
+ *     A -> B
+ *     B -> null)
+ *
+ */
+val NULLABLE_LIST = mutableListOf<Char>()
+
+/**
  * Функция заполнения PRODUCTION_MAP.
  */
 fun initProductionMap() {
@@ -66,6 +77,44 @@ fun initProductionMap() {
         val processed = mutableListOf<Char>()
         checkNonTerminals(prod, processed, productionMap)
         PRODUCTION_MAP[prod] = productionMap[prod]!!
+    }
+}
+
+/**
+ * Функция заполнения NULLABLE_LIST
+ */
+fun initNullableList() {
+    // Цикл до тех пор, пока не проверили все
+    while(true) {
+        var newNTermFound = false
+        loop@ for (nterm in NON_TERMINAL) {
+            // Если нетерминал уже в списке - пропускаем его
+            if (nterm in NULLABLE_LIST) continue
+            val productions = PRODUCTION[nterm]!!
+
+            // Имеется продукция вида A -> null
+            if (null in productions) {
+                NULLABLE_LIST += nterm
+                newNTermFound = true
+                // дальше не интересно
+                break@loop
+            }
+
+            for (nullterm in NULLABLE_LIST) {
+                // Если имеется продукция вида A->B, и B уже в NULLABLE_LIST
+                if (productions.contains(nullterm.toString())) {
+                    NULLABLE_LIST +=nterm
+                    newNTermFound = true
+                    // дальше не интересно
+                    break@loop
+                }
+            }
+        }
+
+        if (!newNTermFound) {
+            // Больше ничего не нашли. Можно выходить.
+            return
+        }
     }
 }
 
@@ -227,8 +276,8 @@ fun parse() {
                 // currentSymbol - Нетерминал
 
                 // Возможны два случая:
-                // Если имеется продукция $currentSymbol -> null, то ситуация допустимая, в противном случае - ошибка
-                if (PRODUCTION[currentSymbol]!!.contains(null)) {
+                // Если имеется продукция $currentSymbol в списке NULLABLE_LIST, то ситуация допустимая, в противном случае - ошибка
+                if (currentSymbol in NULLABLE_LIST){
                     // Записываем нетерминал
                     PRODUCTION_STACK.peek()!!.position++
                     ACCEPTED_STACK.push(currentSymbol)
@@ -304,8 +353,8 @@ fun parse() {
                 }
 
                 // Следующий символ не допустим.
-                // Если имеется продукция $currentSymbol -> null, то ситуация допустимая, в противном случае - ошибка
-                if (PRODUCTION[currentSymbol]!!.contains(null)) {
+                // Если имеется продукция $currentSymbol в списке NULLABLE_LIST, то ситуация допустимая, в противном случае - ошибка
+                if (currentSymbol in NULLABLE_LIST) {
                     // Записываем нетерминал
                     PRODUCTION_STACK.peek()!!.position++
                     ACCEPTED_STACK.push(currentSymbol)
