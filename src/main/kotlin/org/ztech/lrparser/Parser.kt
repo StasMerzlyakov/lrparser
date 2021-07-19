@@ -1,16 +1,86 @@
 package org.ztech.lrparser
 
-import java.lang.Exception
+import kotlin.Exception
 import kotlin.system.exitProcess
 
 /**
  * Данный файл должен в будущем генерироваться
  */
 
-// Расширенное множество терминальных символов (с null)
-val TERMINAL = listOf('a', 'b', 'c', 'd', 'e', null)
 
-// Множество нетерминальных симовлов
+/**
+ * Тип данных, используемый при разборе.
+ */
+data class Production(
+    val nTerm: Char, // Продукция (нетерминальный символ)
+    val production: Int, // Номер продукции данного терминала
+    var position: Int = 0 // Номер положения курсора. Используется при обработке.
+)
+
+/**
+ * Класс грамматика
+ */
+data class Grammar(
+    /**
+     * Список терминальных символов.
+     * (буквы в нижнем регистре)
+     */
+    val terminals: List<Char>,
+
+    /**
+     * Список нетерминальных символов.
+     * (буквы в верхнем регистре)
+     */
+    val nonTerminals: List<Char>,
+
+    /**
+     * Множество продукций. Для реализаций продукции вида A->ε (пустой символ)
+     * в список productions['A'] добавляется null.
+     */
+    val productions: Map<Char, Set<String?>>,
+
+    /**
+     * Стартовая продукция
+     */
+    val startProduction: Char
+) {
+    /**
+     * Список терминалов, выводимых из пустого символа.
+     */
+    private val nullableTerminals = mutableListOf<Char>()
+
+    /**
+     * Карта соответствия
+     * Нетерминал ->  { допустимый символ to стек продукций до данного символа
+     *                 .......
+     *                }
+     * Используется при разборе входного потока. Позволяет определить список допустимых символов
+     * в данном положении и необходимые продукции для достижения данного символа.
+     */
+    private val productionMap = mutableMapOf<Char, LinkedHashMap<Char, Stack<Production>>>()
+
+    init {
+        // Проверяем терминальные символы
+        if (terminals.isEmpty()) throw Exception("Список терминальных символов пустой")
+        if (terminals.any{ it !in 'a' .. 'z' })
+            throw Exception("Список терминальных символов должен содержать только латинские символы в нижнем регистре")
+
+        // Проверяем нетерминальные символы
+        if (nonTerminals.isEmpty()) throw Exception("Список нетерминальных символов пустой")
+        if (nonTerminals.any{ it !in 'A' .. 'Z' })
+            throw Exception("Список нетерминальных символов должен содержать только латинские символы в верхнем регистре")
+
+
+
+    }
+
+}
+
+
+// Расширенное множество терминальных символов (с null)
+val TERMINAL = listOf('a', 'b', 'c', 'd', 'e')
+
+// Множество нетерминальных символов
 val NON_TERMINAL = listOf('S', 'A', 'B', 'C')
 
 // Множество продукций
@@ -37,14 +107,6 @@ interface ITokenizer : PeekIterator<Char> {
     open fun processError(errorToken: Char?, expected: List<Char>)
 }
 
-/**
- * Тип данных, используемый при разборе.
- */
-data class Production(
-    val nTerm: Char, // Продукция (нетерминальный символ)
-    val production: Int, // Номер продукции данного терминала
-    var position: Int = 0 // Номер положения курсора. Используется при обработке.
-)
 
 /**
  * Карта соответствия
@@ -54,7 +116,6 @@ data class Production(
  * Используется при аналезе. Позволяет определить список допустимых символов в данном положении и
  * необходимые продукции для достижения данного символа.
  */
-
 val PRODUCTION_MAP = mutableMapOf<Char, LinkedHashMap<Char, Stack<Production>>>()
 
 /**
@@ -223,16 +284,11 @@ val PRODUCTION_STACK = mutableListOf<Production>()
 val ACCEPTED_STACK = mutableListOf<Char>()
 
 /**
- * Входные данные
- */
-val INPUT_STACK = mutableListOf<Char>()
-
-/**
  * Основная функция разбора. Вызывается после инициализации.
  */
-fun parse() {
+fun parse(inputStack: Stack<Char>) {
     while (true) {
-        if (INPUT_STACK.isEmpty()) {
+        if (inputStack.isEmpty()) {
             if (PRODUCTION_STACK.isEmpty()) {
                 if (ACCEPTED_STACK.size == 1 && ACCEPTED_STACK.peek() == START_PRODUCTION) {
                     // Выход. Все отлично.
@@ -291,7 +347,7 @@ fun parse() {
             throw Exception("Ошибка разбора xml. Входной поток пуст. Ожидаемые значения: $acceptedSymbols")
         } else {
             // Оцениваем очередной символ
-            val nextChar = INPUT_STACK.peek()
+            val nextChar = inputStack.peek()
 
             if (PRODUCTION_STACK.isEmpty()) {
                 // Нужно выбрать правильную продукцию из продукци
@@ -331,7 +387,7 @@ fun parse() {
                     // Все хорошо, идем дальше
                     currentProduction.position ++
                     ACCEPTED_STACK.push(nextChar)
-                    INPUT_STACK.pop()
+                    inputStack.pop()
                     continue
                 } else {
                     // Ошибка разбора xml
@@ -348,7 +404,7 @@ fun parse() {
                     PRODUCTION_MAP[START_PRODUCTION]!![nextChar]!!.forEach { PRODUCTION_STACK.push(it) }
                     PRODUCTION_STACK.peek()!!.position++
                     ACCEPTED_STACK.push(nextChar!!)
-                    INPUT_STACK.pop()
+                    inputStack.pop()
                     continue
                 }
 

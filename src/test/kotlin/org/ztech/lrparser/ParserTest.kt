@@ -11,33 +11,33 @@ class ParserTest {
         println(PRODUCTION_MAP)
         println(NULLABLE_LIST)
 
-        INPUT_STACK.clear()
+        val inputStack = mutableListOf<Char>()
         PRODUCTION_STACK.clear()
         ACCEPTED_STACK.clear()
 
-        "ab".forEach { INPUT_STACK.push(it) }
-        INPUT_STACK.reverse() // TODO - подумать надо api
+        "ab".forEach { inputStack.push(it) }
+        inputStack.reverse() // TODO - подумать надо api
 
-        parse()
+        parse(inputStack)
 
-        INPUT_STACK.clear()
+        inputStack.clear()
         PRODUCTION_STACK.clear()
         ACCEPTED_STACK.clear()
 
-        "bc".forEach { INPUT_STACK.push(it) }
-        INPUT_STACK.reverse() // TODO - подумать надо api
-        parse()
+        "bc".forEach { inputStack.push(it) }
+        inputStack.reverse() // TODO - подумать надо api
+        parse(inputStack)
         println(PRODUCTION_STACK)
         println(ACCEPTED_STACK)
 
 
-        INPUT_STACK.clear()
+        inputStack.clear()
         PRODUCTION_STACK.clear()
         ACCEPTED_STACK.clear()
 
-        "dad".forEach { INPUT_STACK.push(it) }
-        INPUT_STACK.reverse() // TODO - подумать надо api
-        parse()
+        "dad".forEach { inputStack.push(it) }
+        inputStack.reverse() // TODO - подумать надо api
+        parse(inputStack)
         println(PRODUCTION_STACK)
         println(ACCEPTED_STACK)
 
