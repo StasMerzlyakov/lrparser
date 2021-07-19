@@ -7,21 +7,6 @@ class ParserTest {
     @Test
     fun doFirstTest() {
 
-        /*
-// Расширенное множество терминальных символов (с null)
-val TERMINAL = listOf('a', 'b', 'c', 'd', 'e')
-
-// Множество нетерминальных символов
-val NON_TERMINAL = listOf('S', 'A', 'B', 'C')
-*/
-// Множество продукций
-//val PRODUCTION = mapOf(
-//    'S' to listOf("ab", "bAc", "cdBCa"),
-//    'A' to listOf("bAc", "B"),
-//    'B' to listOf("dC", null, "Ae"),
-//    'C' to listOf("aCb", "d", null)
-//)
-
         val grammar = Grammar(
             terminals = listOf('a', 'b', 'c', 'd', 'e'),
             nonTerminals = listOf('S', 'A', 'B', 'C'),

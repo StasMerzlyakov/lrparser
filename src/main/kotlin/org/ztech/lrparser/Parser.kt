@@ -223,6 +223,10 @@ data class Grammar(
         if (nonTerminals.any{ it !in 'A' .. 'Z' })
             throw Exception("Список нетерминальных символов должен содержать только латинские символы в верхнем регистре")
 
+        if (startProduction !in nonTerminals)
+            throw Exception("Начальная продукция должна присутствовать в списке нетерминальных символов")
+
+
         // Заполнение productionMap
         initProductionMap()
 
