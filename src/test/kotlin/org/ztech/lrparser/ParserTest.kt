@@ -30,5 +30,16 @@ class ParserTest {
         println(PRODUCTION_STACK)
         println(ACCEPTED_STACK)
 
+
+        INPUT_STACK.clear()
+        PRODUCTION_STACK.clear()
+        ACCEPTED_STACK.clear()
+
+        "dad".forEach { INPUT_STACK.push(it) }
+        INPUT_STACK.reverse() // TODO - подумать надо api
+        parse()
+        println(PRODUCTION_STACK)
+        println(ACCEPTED_STACK)
+
     }
 }
