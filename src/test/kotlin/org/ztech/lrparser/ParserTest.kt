@@ -1,10 +1,8 @@
 package org.ztech.lrparser
 
-import org.junit.jupiter.api.Test
-
 class ParserTest {
 
-    @Test
+    /*@Test
     fun doFirstTest() {
 
         val grammar = Grammar(
@@ -14,7 +12,8 @@ class ParserTest {
                 'S' to listOf("ab", "bAc", "cdBCa"),
                 'A' to listOf("bAc", "B"),
                 'B' to listOf("dC", null, "Ae"),
-                'C' to listOf("aCb", "d", null)),
+                'C' to listOf("aCb", "d", null)
+            ),
             startProduction = 'S'
         )
         val inputStack = mutableListOf<Char>()
@@ -34,6 +33,5 @@ class ParserTest {
         "dad".forEach { inputStack.push(it) }
         inputStack.reverse() // TODO - подумать надо api
         grammar.parse(inputStack)
-
-    }
+    }*/
 }

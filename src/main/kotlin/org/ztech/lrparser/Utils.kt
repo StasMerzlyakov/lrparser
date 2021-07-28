@@ -2,12 +2,10 @@ package org.ztech.lrparser
 
 import java.util.NoSuchElementException
 
-
 /**
  * Алиас для MutableList
  */
 typealias Stack<T> = MutableList<T>
-
 
 /**
  * Добавляение элемента в стэк.
@@ -33,11 +31,10 @@ fun <T> Stack<T>.peek(): T? = if (isNotEmpty()) this[lastIndex] else null
  */
 fun <T> Stack<T>.peekPrev(): T? = if (isNotEmpty()) this[lastIndex] else null
 
-
 /**
  * Итератор с функцией peek. Используется в StructuredParser
  */
-interface PeekIterator<T>: Iterator<T> {
+interface PeekIterator<T> : Iterator<T> {
     /**
      * Функция показа следующего токена
      */
@@ -47,7 +44,7 @@ interface PeekIterator<T>: Iterator<T> {
 /**
  * Реализация PeekIterator
  */
-open class PeekIteratorImpl<T> (val iterator: Iterator<T>): PeekIterator<T> {
+open class PeekIteratorImpl<T> (val iterator: Iterator<T>) : PeekIterator<T> {
 
     private var peeked = false
 
@@ -73,7 +70,7 @@ open class PeekIteratorImpl<T> (val iterator: Iterator<T>): PeekIterator<T> {
         throw NoSuchElementException()
     }
 
-    override fun peek(): T?{
+    override fun peek(): T? {
         return when {
             peeked -> peekedValue
             iterator.hasNext() -> {
@@ -86,5 +83,4 @@ open class PeekIteratorImpl<T> (val iterator: Iterator<T>): PeekIterator<T> {
             }
         }
     }
-
 }

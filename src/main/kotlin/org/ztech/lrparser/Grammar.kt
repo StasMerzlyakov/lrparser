@@ -1,73 +1,139 @@
 package org.ztech.lrparser
 
 import kotlin.Exception
-import kotlin.system.exitProcess
-
-/**
- * Данный файл должен в будущем генерироваться
- */
-
-
-/**
- * Тип данных, используемый при разборе.
- */
-data class Production(
-    val nTerm: Char, // Продукция (нетерминальный символ)
-    val production: Int, // Номер продукции данного терминала
-    var position: Int = 0 // Номер положения курсора. Используется при обработке.
-)
 
 /**
  * Класс, определяющий грамматику
  */
 data class Grammar(
     /**
-     * Список терминальных символов.
-     * (буквы в нижнем регистре)
+     * Список терминальных символов. Допустимые значения a..z
      */
-    val terminals: List<Char>,
+    val terminals: Set<Char>,
 
     /**
-     * Список нетерминальных символов.
-     * (буквы в верхнем регистре)
+     * Список нетерминальных символов. Допустимые значения A..Z
      */
-    val nonTerminals: List<Char>,
+    val nonTerminals: Set<Char>,
 
     /**
-     * Множество продукций. Для реализаций продукции вида A->ε (пустой символ)
-     * в список productions['A'] добавляется null.
+     * Множество продукций, выводимых из данного нетерминала. Для продукций вида
+     * A->ε (пустой символ) добавляется пустая строка.
      */
-    val productions: Map<Char, List<String?>>,
+    val productions: Map<Char, Set<String>>,
 
     /**
      * Стартовая продукция
      */
     val startProduction: Char
 ) {
-    /**
-     * Список терминалов, выводимых из пустого символа.
-     */
-    private val nullableTerminals = mutableListOf<Char>()
 
     /**
-     * Карта соответствия
-     * Нетерминал ->  { допустимый символ to стек продукций до данного символа
-     *                 .......
-     *                }
-     * Используется при разборе входного потока. Позволяет определить список допустимых символов
-     * в данном положении и необходимые продукции для достижения данного символа.
+     * Символ, используемый в функциях first и follow для представления пустого символа
      */
-    private val productionMap = mutableMapOf<Char, LinkedHashMap<Char, Stack<Production>>>()
+    val epsilon: Char = 'ε'
 
     /**
-     * Стек позиций. Начинаем со стартовой позиции
+     * Маркер конца строки, применяемый для описания конца строки в функции follow
      */
-    private val productionStack = mutableListOf<Production>()
+    val eof: Char = '$'
+
+    private val first = mutableMapOf<Char, Set<Char>>()
 
     /**
-     * Стек допущенных(разобранных) терминалов и нетерминалов
+     * Функция first(γ) - Множество терминалов (включая ε), с которых может начинаться γ.
+     * @param ch - любой символ грамматики
      */
-    private val acceptedStack = mutableListOf<Char>()
+    private fun first(ch: Char): Set<Char> {
+        return first[ch]!!
+    }
+
+    private val follow = mutableMapOf<Char, Set<Char>>()
+
+    /**
+     * Функция follow(A) - Множество терминалов (включая ε и $), которые могут следовать непосредственно
+     * за нетерминальным символом A
+     * @param ch - любой нетерминальный символ грамматики
+     */
+    private fun follow(ch: Char): Set<Char> {
+        return follow[ch]!!
+    }
+
+    init {
+        // Проверяем терминальные символы
+        if (terminals.isEmpty()) throw Exception("Список терминальных символов пустой")
+
+        if (terminals.any { it !in 'a'..'z' })
+            throw Exception(
+                "Список терминальных символов должен содержать только латинские " +
+                    "символы в нижнем регистре."
+            )
+
+        // Проверяем нетерминальные символы
+        if (nonTerminals.isEmpty()) throw Exception("Список нетерминальных символов пустой")
+        if (nonTerminals.any { it !in 'A'..'Z' })
+            throw Exception(
+                "Список нетерминальных символов должен содержать только латинские " +
+                    "символы в верхнем регистре."
+            )
+
+        // Проверим что для каждого нетеминала имеется продукция
+        nonTerminals.forEach {
+            if (it !in productions.keys || productions[it]!!.isEmpty()) {
+                throw Exception("Для нетерминала $it не определено ни одной продукции.")
+            }
+        }
+
+        // Проверяем продукции.
+        productions.forEach { entry ->
+            // Проверим левую часть продукции
+            if (entry.key !in nonTerminals) throw Exception(
+                "Левая часть продукции должна содержать только нетерминала. " +
+                    "${entry.key}"
+            )
+
+            // Проверим правую часть продукций. Правая часть должна состоять только из терминальных
+            // и нетерминальных символов
+            for (rightSidesSet in entry.value) {
+                rightSidesSet.forEach {
+                    if (it !in terminals && it !in nonTerminals) {
+                        throw Exception(
+                            "Для нетерминала ${entry.key} найдена продукция, " +
+                                "содержащая недопустимые символы"
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/*
+    init {
+        // Проверяем терминальные символы
+        if (terminals.isEmpty()) throw Exception("Список терминальных символов пустой")
+        if (terminals.any{ it !in 'a' .. 'z' })
+            throw Exception("Список терминальных символов должен содержать только латинские символы в нижнем регистре")
+
+        // Проверяем нетерминальные символы
+        if (nonTerminals.isEmpty()) throw Exception("Список нетерминальных символов пустой")
+        if (nonTerminals.any{ it !in 'A' .. 'Z' })
+            throw Exception("Список нетерминальных символов должен содержать только латинские символы в верхнем регистре")
+
+        if (startProduction !in nonTerminals)
+            throw Exception("Начальная продукция должна присутствовать в списке нетерминальных символов")
+
+
+        // Заполнение productionMap
+        initProductionMap()
+
+        // Заполнение nullableTerminals
+        initNullableList()
+    }
+
+
+
+
 
     /**
      * Проходимся по  всем продукциям данного нетерминала
@@ -210,28 +276,6 @@ data class Grammar(
                 return
             }
         }
-    }
-
-    init {
-        // Проверяем терминальные символы
-        if (terminals.isEmpty()) throw Exception("Список терминальных символов пустой")
-        if (terminals.any{ it !in 'a' .. 'z' })
-            throw Exception("Список терминальных символов должен содержать только латинские символы в нижнем регистре")
-
-        // Проверяем нетерминальные символы
-        if (nonTerminals.isEmpty()) throw Exception("Список нетерминальных символов пустой")
-        if (nonTerminals.any{ it !in 'A' .. 'Z' })
-            throw Exception("Список нетерминальных символов должен содержать только латинские символы в верхнем регистре")
-
-        if (startProduction !in nonTerminals)
-            throw Exception("Начальная продукция должна присутствовать в списке нетерминальных символов")
-
-
-        // Заполнение productionMap
-        initProductionMap()
-
-        // Заполнение nullableTerminals
-        initNullableList()
     }
 
     /**
@@ -445,4 +489,4 @@ interface ITokenizer : PeekIterator<Char> {
 // */
 //val ACCEPTED_STACK = mutableListOf<Char>()
 //
-
+*/
