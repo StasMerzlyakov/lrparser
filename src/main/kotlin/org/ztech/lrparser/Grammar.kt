@@ -5,7 +5,7 @@ import kotlin.Exception
 /**
  * Класс, определяющий грамматику
  */
-data class Grammar(
+class Grammar(
     /**
      * Список терминальных символов. Допустимые значения a..z
      */
@@ -28,36 +28,35 @@ data class Grammar(
     val startProduction: Char
 ) {
 
-    /**
-     * Символ, используемый в функциях first и follow для представления пустого символа
-     */
-    val epsilon: Char = 'ε'
+    companion object {
+        /**
+         * Символ, используемый в функциях first и follow для представления пустого символа
+         */
+        const val EPSILON: Char = 'ε'
 
-    /**
-     * Маркер конца строки, применяемый для описания конца строки в функции follow
-     */
-    val eof: Char = '$'
-
-    private val first = mutableMapOf<Char, Set<Char>>()
-
-    /**
-     * Функция first(γ) - Множество терминалов (включая ε), с которых может начинаться γ.
-     * @param ch - любой символ грамматики
-     */
-    private fun first(ch: Char): Set<Char> {
-        return first[ch]!!
+        /**
+         * Маркер конца строки, применяемый для описания конца строки в функции follow
+         */
+        const val EOF: Char = '$'
     }
 
-    private val follow = mutableMapOf<Char, Set<Char>>()
+    /**
+     * Отображение first(γ) - Множество терминалов (включая ε), с которых может начинаться любой
+     * (терминальный или нетерминальный) символ γ.
+     */
+    private val first = mutableMapOf<Char, MutableSet<Char>>()
+
+    fun getFirst(): Map<Char, Set<Char>> = first.toMap()
 
     /**
      * Функция follow(A) - Множество терминалов (включая ε и $), которые могут следовать непосредственно
      * за нетерминальным символом A
      * @param ch - любой нетерминальный символ грамматики
      */
-    private fun follow(ch: Char): Set<Char> {
-        return follow[ch]!!
-    }
+    private val follow = mutableMapOf<Char, MutableSet<Char>>()
+
+    fun getFollow(): Map<Char, Set<Char>> = follow.toMap()
+
 
     init {
         // Проверяем терминальные символы
@@ -103,6 +102,84 @@ data class Grammar(
                 }
             }
         }
+
+        // Инициализаруем множество first
+        initFirst()
+
+        // Инициализация множества follow
+        //initFollow()
+    }
+
+    /**
+     * Функция инициализации множества first.
+     * см. Ахо, Сети, Ульман Компиляторы. Принципы, технологии, инструменты. 2ed. 2008
+     */
+    private fun initFirst() {
+        var next = true
+
+        // 1. first от терминального символа содержит только себя
+        terminals.forEach { first[it] = mutableSetOf(it) }
+
+        // Цикл до тех пор, пока ни к одному из множеств first не смогут быть добавлены ни терминалы ни ε
+        while (next) {
+            next = false
+
+            // Проходимся по всем нетерминалам
+            nonTerminals.forEach each@{ nonTerminal ->
+
+                // Заполняем first для данного нетерминала
+                val nTermFirst = first.getOrDefault(nonTerminal, mutableSetOf())
+
+                // Проходимся по всем продукциям, определенным для данного нетерминала
+                val productionSet = productions.getValue(nonTerminal)
+
+                productionSet.forEach prod@{ production ->
+
+                    // 2. Двигаемся по продукциямЕсли нашли продукцию вида X->ABC, проходимся по всем символам продукции
+                    var addEpsilon = true
+                    production.forEach { symbolInProduction ->
+
+                        // Проверяем first(symbolInProduction)
+                        first[symbolInProduction]?.also {
+                            // Если first[symbolInProduction] не пустой, добавляем все элементы к nTermFirst
+                            // если список изменился - устанавливаем флаг next
+                            it.filterNot { ch -> ch == EPSILON }.forEach { ch ->
+                                if (!nTermFirst.contains(ch)) {
+                                    nTermFirst += ch
+                                    next = true
+                                }
+                            }
+
+                            // Переходить к следующему символу в продукции ABC можно только ε содержится
+                            // в first[ch]
+                            if (!it.contains(EPSILON)) {
+                                addEpsilon = false
+                                return@prod
+                            }
+                        } ?: run {
+                            // Если follow[symbolInProduction] не определен, проверять дальше не имеет смысла
+                            addEpsilon = false
+                            return@prod
+                        }
+                    }
+                    // 3. Если нашли продукцию вида X->ε и ε не принадлежит first(X) добавляем ε к first(X)
+                    // (либо пройдя по непустой продукции X -> ABC обнаружили, что ε присутсвует и в first(A) и в
+                    //  first(B) и в  first(C))
+                    if ((production.isEmpty() || addEpsilon) && !nTermFirst.contains(EPSILON)) {
+                        nTermFirst += EPSILON
+                        next = true
+                    }
+                }
+
+                first[nonTerminal] = nTermFirst
+            }
+        }
+    }
+    /**
+     * Функция инициализации множества follow
+     */
+    private fun initFollow() {
+        TODO("Not yet implemented")
     }
 }
 

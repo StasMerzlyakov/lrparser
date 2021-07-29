@@ -1,5 +1,6 @@
 package org.ztech.lrparser
 
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
@@ -88,36 +89,48 @@ class ParserTest {
         }
     }
 
-    /*@Test
+    /**
+     * Тест на провильность работы функции initFirst
+     */
+    @Test
     fun doFirstTest() {
-
+        /**
+         * S -> AB
+         * B -> aAB | ε
+         * A -> CD
+         * D -> bCD | ε
+         * C -> dSf | e
+         */
         val grammar = Grammar(
-            terminals = listOf('a', 'b', 'c', 'd', 'e'),
-            nonTerminals = listOf('S', 'A', 'B', 'C'),
+            terminals = setOf('a', 'b', 'c', 'd', 'e', 'f'),
+            nonTerminals = setOf('S', 'A', 'B', 'C', 'D'),
             productions = mapOf(
-                'S' to listOf("ab", "bAc", "cdBCa"),
-                'A' to listOf("bAc", "B"),
-                'B' to listOf("dC", null, "Ae"),
-                'C' to listOf("aCb", "d", null)
+                'S' to setOf("AB"),
+                'B' to setOf("aAB", ""),
+                'A' to setOf("CD"),
+                'D' to setOf("bCD", ""),
+                'C' to setOf("dSd", "e")
             ),
             startProduction = 'S'
         )
-        val inputStack = mutableListOf<Char>()
 
-        "ab".forEach { inputStack.push(it) }
-        inputStack.reverse() // TODO - подумать надо api
+        val firstMap = grammar.getFirst()
+        println(firstMap)
 
-        grammar.parse(inputStack)
+        Assertions.assertTrue(firstMap.getValue('a').equalsTo(setOf('a')))
+        Assertions.assertTrue(firstMap.getValue('b').equalsTo(setOf('b')))
+        Assertions.assertTrue(firstMap.getValue('c').equalsTo(setOf('c')))
+        Assertions.assertTrue(firstMap.getValue('d').equalsTo(setOf('d')))
+        Assertions.assertTrue(firstMap.getValue('f').equalsTo(setOf('f')))
 
-        inputStack.clear()
+        Assertions.assertTrue(firstMap.getValue('S').equalsTo(setOf('d', 'e')))
+        Assertions.assertTrue(firstMap.getValue('B').equalsTo(setOf('a', Grammar.EPSILON)))
+        Assertions.assertTrue(firstMap.getValue('A').equalsTo(setOf('d', 'e')))
+        Assertions.assertTrue(firstMap.getValue('D').equalsTo(setOf('b', Grammar.EPSILON)))
+        Assertions.assertTrue(firstMap.getValue('C').equalsTo(setOf('d', 'e')))
 
-        "bc".forEach { inputStack.push(it) }
-        inputStack.reverse() // TODO - подумать надо api
-        grammar.parse(inputStack)
+    }
 
-        inputStack.clear()
-        "dad".forEach { inputStack.push(it) }
-        inputStack.reverse() // TODO - подумать надо api
-        grammar.parse(inputStack)
-    }*/
+    private fun <E> Set<E>.equalsTo(set: Set<E>): Boolean = this.containsAll(set) && set.containsAll(this)
+
 }
