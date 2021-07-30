@@ -128,9 +128,7 @@ class ParserTest {
         Assertions.assertTrue(firstMap.getValue('A').equalsTo(setOf('d', 'e')))
         Assertions.assertTrue(firstMap.getValue('D').equalsTo(setOf('b', Grammar.EPSILON)))
         Assertions.assertTrue(firstMap.getValue('C').equalsTo(setOf('d', 'e')))
-
     }
 
     private fun <E> Set<E>.equalsTo(set: Set<E>): Boolean = this.containsAll(set) && set.containsAll(this)
-
 }

@@ -15,6 +15,7 @@ plugins {
 }
 
 group 'org.ztech'
+
 version = rootProject.version
 
 repositories {

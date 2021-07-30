@@ -57,7 +57,6 @@ class Grammar(
 
     fun getFollow(): Map<Char, Set<Char>> = follow.toMap()
 
-
     init {
         // Проверяем терминальные символы
         if (terminals.isEmpty()) throw Exception("Список терминальных символов пустой")
@@ -107,7 +106,7 @@ class Grammar(
         initFirst()
 
         // Инициализация множества follow
-        //initFollow()
+        // initFollow()
     }
 
     /**
