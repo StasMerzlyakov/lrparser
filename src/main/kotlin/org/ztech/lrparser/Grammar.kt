@@ -102,11 +102,11 @@ class Grammar(
             }
         }
 
-        // Инициализаруем множество first
+        // Инициализируем множество first
         initFirst()
 
         // Инициализация множества follow
-        // initFollow()
+        initFollow()
     }
 
     /**
@@ -174,11 +174,72 @@ class Grammar(
             }
         }
     }
+
     /**
      * Функция инициализации множества follow
+     * см. Ахо, Сети, Ульман Компиляторы. Принципы, технологии, инструменты. 2ed. 2008
      */
     private fun initFollow() {
-        TODO("Not yet implemented")
+
+        // 1. Поместим $ в FOLLOW(S)
+        val nTermFollow = follow.getOrDefault(startProduction, mutableSetOf())
+        nTermFollow += EOF
+        follow[startProduction] = nTermFollow
+
+        do {
+            var changed = false
+            nonTerminals.forEach { A ->
+                run {
+                    val aProduction = productions[A]
+                    // Проверяем каждую продукцию.
+                    aProduction?.forEach { prod ->
+                        // Просматриваем продукцию и находим нетерминальные символы
+                        prod.forEachIndexed { ind, B ->
+                            if (B in nonTerminals) {
+                                val followB = follow.getOrDefault(B, mutableSetOf())
+
+                                if (ind < prod.length - 1) {
+                                    // запоминаем размер до
+                                    val sizeBefore = followB.size
+
+                                    // добавляем все элементы FIRST(β) кроме ε в множество FOLLOW(B)
+                                    val firstBetta = first.getValue(prod[ind + 1])
+
+                                    // 2. Если имеется продукция вида A -> αBβ, то все элементы множества FIRST(β)
+                                    // кроме ε, помещаются в множество FOLLOW(B)
+                                    followB.addAll(firstBetta.filterNot { it == EPSILON })
+
+                                    // 3. Если имеется продукция вида A -> αBβ, где FIRST(β) содержит ε,
+                                    // то все элементы множества FOLLOW(A) помещаются в множество FOLLOW(B)
+                                    if (EPSILON in firstBetta) {
+                                        followB.addAll(follow.getOrDefault(A, mutableSetOf()))
+                                    }
+
+                                    // проверяем размер после; если размеры различаются - значит были добавления
+                                    if (sizeBefore != followB.size) changed = true
+                                }
+                                // 3. Если имеется продукция вида A -> αB, то все элементы множества FOLLOW(A)
+                                // помещаются в множество FOLLOW(B)
+                                if (ind == prod.length - 1) {
+                                    // Случай A -> αB
+
+                                    // запоминаем размер до
+                                    val sizeBefore = followB.size
+
+                                    // добавляем элементы множества FOLLOW(A)
+                                    followB.addAll(follow.getOrDefault(A, mutableSetOf()))
+
+                                    // проверяем размер после; если размеры различаются - значит были добавления
+                                    if (sizeBefore != followB.size) changed = true
+                                }
+                                // Если были изменения - надо актуализировать отображение follow
+                                if (changed) follow[B] = followB
+                            }
+                        }
+                    }
+                }
+            }
+        } while (changed)
     }
 }
 

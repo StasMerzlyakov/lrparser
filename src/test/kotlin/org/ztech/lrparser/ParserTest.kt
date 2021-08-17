@@ -90,7 +90,7 @@ class ParserTest {
     }
 
     /**
-     * Тест на провильность работы функции initFirst
+     * Тест на правильность работы функции initFirst
      */
     @Test
     fun doFirstTest() {
@@ -99,17 +99,17 @@ class ParserTest {
          * B -> aAB | ε
          * A -> CD
          * D -> bCD | ε
-         * C -> dSf | e
+         * C -> dSe | c
          */
         val grammar = Grammar(
-            terminals = setOf('a', 'b', 'c', 'd', 'e', 'f'),
+            terminals = setOf('a', 'b', 'c', 'd', 'e'),
             nonTerminals = setOf('S', 'A', 'B', 'C', 'D'),
             productions = mapOf(
                 'S' to setOf("AB"),
                 'B' to setOf("aAB", ""),
                 'A' to setOf("CD"),
                 'D' to setOf("bCD", ""),
-                'C' to setOf("dSd", "e")
+                'C' to setOf("dSe", "c")
             ),
             startProduction = 'S'
         )
@@ -121,14 +121,49 @@ class ParserTest {
         Assertions.assertTrue(firstMap.getValue('b').equalsTo(setOf('b')))
         Assertions.assertTrue(firstMap.getValue('c').equalsTo(setOf('c')))
         Assertions.assertTrue(firstMap.getValue('d').equalsTo(setOf('d')))
-        Assertions.assertTrue(firstMap.getValue('f').equalsTo(setOf('f')))
+        Assertions.assertTrue(firstMap.getValue('e').equalsTo(setOf('e')))
 
-        Assertions.assertTrue(firstMap.getValue('S').equalsTo(setOf('d', 'e')))
+        Assertions.assertTrue(firstMap.getValue('S').equalsTo(setOf('d', 'c')))
         Assertions.assertTrue(firstMap.getValue('B').equalsTo(setOf('a', Grammar.EPSILON)))
-        Assertions.assertTrue(firstMap.getValue('A').equalsTo(setOf('d', 'e')))
+        Assertions.assertTrue(firstMap.getValue('A').equalsTo(setOf('d', 'c')))
         Assertions.assertTrue(firstMap.getValue('D').equalsTo(setOf('b', Grammar.EPSILON)))
-        Assertions.assertTrue(firstMap.getValue('C').equalsTo(setOf('d', 'e')))
+        Assertions.assertTrue(firstMap.getValue('C').equalsTo(setOf('d', 'c')))
     }
 
     private fun <E> Set<E>.equalsTo(set: Set<E>): Boolean = this.containsAll(set) && set.containsAll(this)
+
+    /**
+     * Тест на правильность работы функции initFollow
+     */
+    @Test
+    fun doFollowTest() {
+        /**
+         * S -> AB
+         * B -> aAB | ε
+         * A -> CD
+         * D -> bCD | ε
+         * C -> dSe | c
+         */
+        val grammar = Grammar(
+            terminals = setOf('a', 'b', 'c', 'd', 'e'),
+            nonTerminals = setOf('S', 'A', 'B', 'C', 'D'),
+            productions = mapOf(
+                'S' to setOf("AB"),
+                'B' to setOf("aAB", ""),
+                'A' to setOf("CD"),
+                'D' to setOf("bCD", ""),
+                'C' to setOf("dSe", "c")
+            ),
+            startProduction = 'S'
+        )
+
+        val followMap = grammar.getFollow()
+        println(followMap)
+
+        Assertions.assertTrue(followMap.getValue('S').equalsTo(setOf('e', Grammar.EOF)))
+        Assertions.assertTrue(followMap.getValue('B').equalsTo(setOf('e', Grammar.EOF)))
+        Assertions.assertTrue(followMap.getValue('A').equalsTo(setOf('a', 'e', Grammar.EOF)))
+        Assertions.assertTrue(followMap.getValue('D').equalsTo(setOf('a', 'e', Grammar.EOF)))
+        Assertions.assertTrue(followMap.getValue('C').equalsTo(setOf('a', 'b', 'e', Grammar.EOF)))
+    }
 }
