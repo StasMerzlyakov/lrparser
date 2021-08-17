@@ -106,9 +106,9 @@ class ParserTest {
             nonTerminals = setOf('S', 'A', 'B', 'C', 'D'),
             productions = mapOf(
                 'S' to setOf("AB"),
-                'B' to setOf("aAB", ""),
+                'B' to setOf("aAB", "ε"),
                 'A' to setOf("CD"),
-                'D' to setOf("bCD", ""),
+                'D' to setOf("bCD", "ε"),
                 'C' to setOf("dSe", "c")
             ),
             startProduction = 'S'
@@ -124,9 +124,9 @@ class ParserTest {
         Assertions.assertTrue(firstMap.getValue('e').equalsTo(setOf('e')))
 
         Assertions.assertTrue(firstMap.getValue('S').equalsTo(setOf('d', 'c')))
-        Assertions.assertTrue(firstMap.getValue('B').equalsTo(setOf('a', Grammar.EPSILON)))
+        Assertions.assertTrue(firstMap.getValue('B').equalsTo(setOf('a', 'ε')))
         Assertions.assertTrue(firstMap.getValue('A').equalsTo(setOf('d', 'c')))
-        Assertions.assertTrue(firstMap.getValue('D').equalsTo(setOf('b', Grammar.EPSILON)))
+        Assertions.assertTrue(firstMap.getValue('D').equalsTo(setOf('b', 'ε')))
         Assertions.assertTrue(firstMap.getValue('C').equalsTo(setOf('d', 'c')))
     }
 
@@ -149,9 +149,9 @@ class ParserTest {
             nonTerminals = setOf('S', 'A', 'B', 'C', 'D'),
             productions = mapOf(
                 'S' to setOf("AB"),
-                'B' to setOf("aAB", ""),
+                'B' to setOf("aAB", "ε"),
                 'A' to setOf("CD"),
-                'D' to setOf("bCD", ""),
+                'D' to setOf("bCD", "ε"),
                 'C' to setOf("dSe", "c")
             ),
             startProduction = 'S'
@@ -160,10 +160,57 @@ class ParserTest {
         val followMap = grammar.getFollow()
         println(followMap)
 
-        Assertions.assertTrue(followMap.getValue('S').equalsTo(setOf('e', Grammar.EOF)))
-        Assertions.assertTrue(followMap.getValue('B').equalsTo(setOf('e', Grammar.EOF)))
-        Assertions.assertTrue(followMap.getValue('A').equalsTo(setOf('a', 'e', Grammar.EOF)))
-        Assertions.assertTrue(followMap.getValue('D').equalsTo(setOf('a', 'e', Grammar.EOF)))
-        Assertions.assertTrue(followMap.getValue('C').equalsTo(setOf('a', 'b', 'e', Grammar.EOF)))
+        Assertions.assertTrue(followMap.getValue('S').equalsTo(setOf('e', '$')))
+        Assertions.assertTrue(followMap.getValue('B').equalsTo(setOf('e', '$')))
+        Assertions.assertTrue(followMap.getValue('A').equalsTo(setOf('a', 'e', '$')))
+        Assertions.assertTrue(followMap.getValue('D').equalsTo(setOf('a', 'e', '$')))
+        Assertions.assertTrue(followMap.getValue('C').equalsTo(setOf('a', 'b', 'e', '$')))
+    }
+
+    /**
+     * Тест на правильность генерации таблицы синтаксического разбора
+     */
+    @Test
+    fun doMTableTest() {
+        /**
+         * S -> AB
+         * B -> aAB | ε
+         * A -> CD
+         * D -> bCD | ε
+         * C -> dSe | c
+         */
+        val grammar = Grammar(
+            terminals = setOf('a', 'b', 'c', 'd', 'e'),
+            nonTerminals = setOf('S', 'A', 'B', 'C', 'D'),
+            productions = mapOf(
+                'S' to setOf("AB"),
+                'B' to setOf("aAB", "ε"),
+                'A' to setOf("CD"),
+                'D' to setOf("bCD", "ε"),
+                'C' to setOf("dSe", "c")
+            ),
+            startProduction = 'S'
+        )
+
+        val mTable = grammar.getMTable()
+        println(mTable)
+
+        Assertions.assertTrue(mTable.getValue('S').getValue('d') == "S->AB")
+        Assertions.assertTrue(mTable.getValue('S').getValue('c') == "S->AB")
+
+        Assertions.assertTrue(mTable.getValue('B').getValue('a') == "B->aAB")
+        Assertions.assertTrue(mTable.getValue('B').getValue('e') == "B->ε")
+        Assertions.assertTrue(mTable.getValue('B').getValue('$') == "B->ε")
+
+        Assertions.assertTrue(mTable.getValue('A').getValue('c') == "A->CD")
+        Assertions.assertTrue(mTable.getValue('A').getValue('d') == "A->CD")
+
+        Assertions.assertTrue(mTable.getValue('D').getValue('a') == "D->ε")
+        Assertions.assertTrue(mTable.getValue('D').getValue('b') == "D->bCD")
+        Assertions.assertTrue(mTable.getValue('D').getValue('e') == "D->ε")
+        Assertions.assertTrue(mTable.getValue('D').getValue('$') == "D->ε")
+
+        Assertions.assertTrue(mTable.getValue('C').getValue('c') == "C->c")
+        Assertions.assertTrue(mTable.getValue('C').getValue('d') == "C->dSe")
     }
 }

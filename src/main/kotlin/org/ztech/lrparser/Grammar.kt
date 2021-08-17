@@ -46,16 +46,31 @@ class Grammar(
      */
     private val first = mutableMapOf<Char, MutableSet<Char>>()
 
+    /**
+     * @see #first
+     */
     fun getFirst(): Map<Char, Set<Char>> = first.toMap()
 
     /**
-     * Функция follow(A) - Множество терминалов (включая ε и $), которые могут следовать непосредственно
+     * Отображение follow(A) - Множество терминалов (включая ε и $), которые могут следовать непосредственно
      * за нетерминальным символом A
-     * @param ch - любой нетерминальный символ грамматики
      */
     private val follow = mutableMapOf<Char, MutableSet<Char>>()
 
+    /**
+     * @see #follow
+     */
     fun getFollow(): Map<Char, Set<Char>> = follow.toMap()
+
+    /**
+     * Таблица синтаксического разбора
+     */
+    private val mTable = mutableMapOf<Char, MutableMap<Char, String>>()
+
+    /**
+     * @see #mTable
+     */
+    fun getMTable(): Map<Char, Map<Char, String>> = mTable.toMap()
 
     init {
         // Проверяем терминальные символы
@@ -93,9 +108,9 @@ class Grammar(
             // Правая часть продукций должна состоять только из символов грамматики
             for (rightSidesSet in entry.value) {
                 rightSidesSet.forEach {
-                    if (it !in terminals && it !in nonTerminals) {
+                    if (it !in terminals && it !in nonTerminals && it != EPSILON) {
                         throw Exception(
-                            "Найдена продукция ${entry.key}-> $it содержащая символы, не относящиеся к грамматике"
+                            "Найдена продукция ${entry.key} -> $it содержащая символы, не относящиеся к грамматике"
                         )
                     }
                 }
@@ -107,6 +122,44 @@ class Grammar(
 
         // Инициализация множества follow
         initFollow()
+
+        // Инициализация таблицы разбора
+        initMTable()
+    }
+
+    /**
+     * Функция построения таблицы предиктивного синтаксического анализа
+     * см Ахо, Сети, Ульман Компиляторы. Принципы, технологии, инструменты. 2ed. 2008
+     */
+    private fun initMTable() {
+
+        // Для каждой продукции грамматики A -> α выполним:
+        productions.forEach { (A, prodsOfA) ->
+            prodsOfA.forEach { prod ->
+                val alphaFirst = first[prod.first()] ?: listOf(EPSILON)
+
+                // Для каждого терминала a из FIRST(α) добавим A -> α в M[A, a]
+                val recordOfA = mTable.getOrDefault(A, mutableMapOf())
+                alphaFirst.forEach { a ->
+                    recordOfA[a] = "$A->$prod"
+                }
+
+                // Если ε присутствует в FIRST(α), то для каждого b из FOLLOW(A) добавляем  A -> α в M[A, b]
+                val followA = follow.getValue(A)
+
+                if (EPSILON in alphaFirst) {
+                    followA.forEach { b ->
+                        recordOfA[b] = "$A->$prod"
+                    }
+                }
+
+                // Если ε присутствует в FIRST(α) и $ присутствует в FOLLOW(A), то добавляем A -> α в M[A, $]
+                if (EPSILON in alphaFirst && EOF in followA) {
+                    recordOfA[EOF] = "$A->$prod"
+                }
+                mTable[A] = recordOfA
+            }
+        }
     }
 
     /**
@@ -134,7 +187,7 @@ class Grammar(
 
                 productionSet.forEach prod@{ production ->
 
-                    // 2. Двигаемся по продукциямЕсли нашли продукцию вида X->ABC, проходимся по всем символам продукции
+                    // 2. Двигаемся по продукциям. Если нашли продукцию вида X->ABC, проходимся по всем символам продукции
                     var addEpsilon = true
                     production.forEach { symbolInProduction ->
 
@@ -149,7 +202,7 @@ class Grammar(
                                 }
                             }
 
-                            // Переходить к следующему символу в продукции ABC можно только ε содержится
+                            // Переходить к следующему символу в продукции ABC можно только если ε содержится
                             // в first[ch]
                             if (!it.contains(EPSILON)) {
                                 addEpsilon = false
@@ -157,14 +210,16 @@ class Grammar(
                             }
                         } ?: run {
                             // Если follow[symbolInProduction] не определен, проверять дальше не имеет смысла
-                            addEpsilon = false
-                            return@prod
+                            if (symbolInProduction != EPSILON) {
+                                addEpsilon = false
+                                return@prod
+                            }
                         }
                     }
                     // 3. Если нашли продукцию вида X->ε и ε не принадлежит first(X) добавляем ε к first(X)
-                    // (либо пройдя по непустой продукции X -> ABC обнаружили, что ε присутсвует и в first(A) и в
-                    //  first(B) и в  first(C))
-                    if ((production.isEmpty() || addEpsilon) && !nTermFirst.contains(EPSILON)) {
+                    // (либо пройдя по непустой продукции X -> ABC обнаружили, что ε присутствует и в first(A) и в
+                    //  first(B) и в first(C))
+                    if ((production == EPSILON.toString() || addEpsilon) && !nTermFirst.contains(EPSILON)) {
                         nTermFirst += EPSILON
                         next = true
                     }
@@ -190,9 +245,9 @@ class Grammar(
             var changed = false
             nonTerminals.forEach { A ->
                 run {
-                    val aProduction = productions[A]
+                    val aProduction = productions.getValue(A)
                     // Проверяем каждую продукцию.
-                    aProduction?.forEach { prod ->
+                    aProduction.forEach { prod ->
                         // Просматриваем продукцию и находим нетерминальные символы
                         prod.forEachIndexed { ind, B ->
                             if (B in nonTerminals) {
