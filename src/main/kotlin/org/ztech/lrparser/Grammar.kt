@@ -79,9 +79,9 @@ class Grammar(
         require(!terminals.contains(EOF)) { "Список терминальных символов содержит строку $EOF" }
 
         // Проверяем нетерминальные символы
-        require(terminals.isNotEmpty()) { "Список нетерминальных символов пустой" }
-        require(!terminals.contains(EPSILON)) { "Список нетерминальных символов содержит строку $EPSILON" }
-        require(!terminals.contains(EOF)) { "Список нетерминальных символов содержит строку $EOF" }
+        require(nonTerminals.isNotEmpty()) { "Список нетерминальных символов пустой" }
+        require(!nonTerminals.contains(EPSILON)) { "Список нетерминальных символов содержит строку $EPSILON" }
+        require(!nonTerminals.contains(EOF)) { "Список нетерминальных символов содержит строку $EOF" }
 
         // Проверяем что нет пересечений между терминальными и нетерминальными символами
         require((terminals intersect nonTerminals).isEmpty()) {
