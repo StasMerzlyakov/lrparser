@@ -138,6 +138,47 @@ class ParserTest {
         Assertions.assertTrue(firstMap.getValue("D").equalsTo(setOf("b", "ε")))
         Assertions.assertTrue(firstMap.getValue("C").equalsTo(setOf("d", "c")))
     }
+
+    /**
+     * Тест на правильность работы функции initFirst
+     */
+    @Test
+    fun doFirstTest2() {
+        /**
+         * E  -> T E′
+         * E′ -> + T E′ | ε
+         * T  -> F T′
+         * T′ -> * F T′ | ε
+         * F -> ( E ) | id
+         */
+        val grammar = Grammar(
+            terminals = setOf("id", "(", ")", "*", "+"),
+            nonTerminals = setOf("E", "E′", "T", "T′", "F"),
+            productions = mapOf(
+                "E" to listOf(listOf("T", "E′")),
+                "E′" to listOf(listOf("+", "T", "E′"), listOf("ε")),
+                "T" to listOf(listOf("F", "T′")),
+                "T′" to listOf(listOf("*", "F", "T′"), listOf("ε")),
+                "F" to listOf(listOf("(", "E", ")"), listOf("id"))
+            ),
+            startProduction = "E"
+        )
+
+        val firstMap = grammar.getFirst()
+        println(firstMap)
+
+        Assertions.assertTrue(firstMap.getValue("(").equalsTo(setOf("(")))
+        Assertions.assertTrue(firstMap.getValue(")").equalsTo(setOf(")")))
+        Assertions.assertTrue(firstMap.getValue("+").equalsTo(setOf("+")))
+        Assertions.assertTrue(firstMap.getValue("*").equalsTo(setOf("*")))
+        Assertions.assertTrue(firstMap.getValue("id").equalsTo(setOf("id")))
+
+        Assertions.assertTrue(firstMap.getValue("F").equalsTo(setOf("(", "id")))
+        Assertions.assertTrue(firstMap.getValue("T").equalsTo(setOf("(", "id")))
+        Assertions.assertTrue(firstMap.getValue("E").equalsTo(setOf("(", "id")))
+        Assertions.assertTrue(firstMap.getValue("E′").equalsTo(setOf("+", "ε")))
+        Assertions.assertTrue(firstMap.getValue("T′").equalsTo(setOf("*", "ε")))
+    }
 /*
 
 
