@@ -179,8 +179,34 @@ class ParserTest {
         Assertions.assertTrue(firstMap.getValue("E′").equalsTo(setOf("+", "ε")))
         Assertions.assertTrue(firstMap.getValue("T′").equalsTo(setOf("*", "ε")))
     }
-/*
 
+    @Test
+    fun doFirstTest3() {
+        /**
+         * E  -> T E′
+         * E′ -> + T E′ | ε
+         * T  -> F T′
+         * T′ -> * F T′ | ε
+         * F -> ( E ) | id
+         */
+
+        val grammar = Grammar(
+            terminals = setOf("id", "(", ")", "*", "+"),
+            nonTerminals = setOf("E", "E′", "T", "T′", "F"),
+            productions = mapOf(
+                "E" to listOf(listOf("T", "E′")),
+                "E′" to listOf(listOf("+", "T", "E′"), listOf("ε")),
+                "T" to listOf(listOf("F", "T′")),
+                "T′" to listOf(listOf("*", "F", "T′"), listOf("ε")),
+                "F" to listOf(listOf("(", "E", ")"), listOf("id"))
+            ),
+            startProduction = "E"
+        )
+
+        Assertions.assertTrue(grammar.first(listOf("F", "T′")).equalsTo(setOf("(", "id")))
+        Assertions.assertTrue(grammar.first(listOf("E′", "F")).equalsTo(setOf("(", "id", "+")))
+        Assertions.assertTrue(grammar.first(listOf("E′", "T′")).equalsTo(setOf("*", "+", "ε")))
+    }
 
     /**
      * Тест на правильность работы функции initFollow
@@ -188,33 +214,33 @@ class ParserTest {
     @Test
     fun doFollowTest() {
         /**
-         * S -> AB
-         * B -> aAB | ε
-         * A -> CD
-         * D -> bCD | ε
-         * C -> dSe | c
+         * E  -> T E′
+         * E′ -> + T E′ | ε
+         * T  -> F T′
+         * T′ -> * F T′ | ε
+         * F -> ( E ) | id
          */
         val grammar = Grammar(
-            terminals = setOf('a', 'b', 'c', 'd', 'e'),
-            nonTerminals = setOf('S', 'A', 'B', 'C', 'D'),
+            terminals = setOf("id", "(", ")", "*", "+"),
+            nonTerminals = setOf("E", "E′", "T", "T′", "F"),
             productions = mapOf(
-                'S' to setOf("AB"),
-                'B' to setOf("aAB", "ε"),
-                'A' to setOf("CD"),
-                'D' to setOf("bCD", "ε"),
-                'C' to setOf("dSe", "c")
+                "E" to listOf(listOf("T", "E′")),
+                "E′" to listOf(listOf("+", "T", "E′"), listOf("ε")),
+                "T" to listOf(listOf("F", "T′")),
+                "T′" to listOf(listOf("*", "F", "T′"), listOf("ε")),
+                "F" to listOf(listOf("(", "E", ")"), listOf("id"))
             ),
-            startProduction = 'S'
+            startProduction = "E"
         )
 
         val followMap = grammar.getFollow()
         println(followMap)
 
-        Assertions.assertTrue(followMap.getValue('S').equalsTo(setOf('e', '$')))
-        Assertions.assertTrue(followMap.getValue('B').equalsTo(setOf('e', '$')))
-        Assertions.assertTrue(followMap.getValue('A').equalsTo(setOf('a', 'e', '$')))
-        Assertions.assertTrue(followMap.getValue('D').equalsTo(setOf('a', 'e', '$')))
-        Assertions.assertTrue(followMap.getValue('C').equalsTo(setOf('a', 'b', 'e', '$')))
+        Assertions.assertTrue(followMap.getValue("E").equalsTo(setOf(")", "$")))
+        Assertions.assertTrue(followMap.getValue("E′").equalsTo(setOf(")", "$")))
+        Assertions.assertTrue(followMap.getValue("T").equalsTo(setOf("+", ")", "$")))
+        Assertions.assertTrue(followMap.getValue("T′").equalsTo(setOf("+", ")", "$")))
+        Assertions.assertTrue(followMap.getValue("F").equalsTo(setOf("+", "*", ")", "$")))
     }
 
     /**
@@ -223,44 +249,50 @@ class ParserTest {
     @Test
     fun doMTableTest() {
         /**
-         * S -> AB
-         * B -> aAB | ε
-         * A -> CD
-         * D -> bCD | ε
-         * C -> dSe | c
+         * E  -> T E′
+         * E′ -> + T E′ | ε
+         * T  -> F T′
+         * T′ -> * F T′ | ε
+         * F -> ( E ) | id
          */
         val grammar = Grammar(
-            terminals = setOf('a', 'b', 'c', 'd', 'e'),
-            nonTerminals = setOf('S', 'A', 'B', 'C', 'D'),
+            terminals = setOf("id", "(", ")", "*", "+"),
+            nonTerminals = setOf("E", "E′", "T", "T′", "F"),
             productions = mapOf(
-                'S' to setOf("AB"),
-                'B' to setOf("aAB", "ε"),
-                'A' to setOf("CD"),
-                'D' to setOf("bCD", "ε"),
-                'C' to setOf("dSe", "c")
+                "E" to listOf(listOf("T", "E′")),
+                "E′" to listOf(listOf("+", "T", "E′"), listOf("ε")),
+                "T" to listOf(listOf("F", "T′")),
+                "T′" to listOf(listOf("*", "F", "T′"), listOf("ε")),
+                "F" to listOf(listOf("(", "E", ")"), listOf("id"))
             ),
-            startProduction = 'S'
+            startProduction = "E"
         )
 
         val mTable = grammar.getMTable()
-        println(mTable)
 
-        Assertions.assertTrue(mTable.getValue('S').getValue('d') == "S->AB")
-        Assertions.assertTrue(mTable.getValue('S').getValue('c') == "S->AB")
+        Assertions.assertTrue(mTable.getValue("E").getValue("id") == "E->TE′")
+        Assertions.assertTrue(mTable.getValue("E").getValue("(") == "E->TE′")
+        Assertions.assertTrue(mTable.getValue("E").size == 2)
 
-        Assertions.assertTrue(mTable.getValue('B').getValue('a') == "B->aAB")
-        Assertions.assertTrue(mTable.getValue('B').getValue('e') == "B->ε")
-        Assertions.assertTrue(mTable.getValue('B').getValue('$') == "B->ε")
+        Assertions.assertTrue(mTable.getValue("E′").getValue("+") == "E′->+TE′")
+        Assertions.assertTrue(mTable.getValue("E′").getValue(")") == "E′->ε")
+        Assertions.assertTrue(mTable.getValue("E′").getValue("$") == "E′->ε")
+        Assertions.assertTrue(mTable.getValue("E′").size == 3)
 
-        Assertions.assertTrue(mTable.getValue('A').getValue('c') == "A->CD")
-        Assertions.assertTrue(mTable.getValue('A').getValue('d') == "A->CD")
+        Assertions.assertTrue(mTable.getValue("T").getValue("id") == "T->FT′")
+        Assertions.assertTrue(mTable.getValue("T").getValue("(") == "T->FT′")
+        Assertions.assertTrue(mTable.getValue("T").size == 2)
 
-        Assertions.assertTrue(mTable.getValue('D').getValue('a') == "D->ε")
-        Assertions.assertTrue(mTable.getValue('D').getValue('b') == "D->bCD")
-        Assertions.assertTrue(mTable.getValue('D').getValue('e') == "D->ε")
-        Assertions.assertTrue(mTable.getValue('D').getValue('$') == "D->ε")
+        Assertions.assertTrue(mTable.getValue("T′").getValue("+") == "T′->ε")
+        Assertions.assertTrue(mTable.getValue("T′").getValue("*") == "T′->*FT′")
+        Assertions.assertTrue(mTable.getValue("T′").getValue(")") == "T′->ε")
+        Assertions.assertTrue(mTable.getValue("T′").getValue("$") == "T′->ε")
+        Assertions.assertTrue(mTable.getValue("T′").size == 4)
 
-        Assertions.assertTrue(mTable.getValue('C').getValue('c') == "C->c")
-        Assertions.assertTrue(mTable.getValue('C').getValue('d') == "C->dSe")
-    } */
+        Assertions.assertTrue(mTable.getValue("F").getValue("id") == "F->id")
+        Assertions.assertTrue(mTable.getValue("F").getValue("(") == "F->(E)")
+        Assertions.assertTrue(mTable.getValue("F").size == 2)
+
+        Assertions.assertTrue(mTable.size == 5)
+    }
 }
