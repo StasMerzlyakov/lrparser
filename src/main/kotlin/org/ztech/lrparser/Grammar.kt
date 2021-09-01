@@ -45,7 +45,7 @@ class Grammar(
     private val first = mutableMapOf<String, MutableSet<String>>()
 
     /**
-     * @see #first
+     * @see #initFirst
      */
     fun getFirst(): Map<String, Set<String>> = first.toMap()
 
@@ -56,7 +56,7 @@ class Grammar(
     private val follow = mutableMapOf<String, MutableSet<String>>()
 
     /**
-     * @see #follow
+     * @see #initFirst
      */
     fun getFollow(): Map<String, Set<String>> = follow.toMap()
 
@@ -66,7 +66,7 @@ class Grammar(
     private val mTable = mutableMapOf<String, MutableMap<String, String>>()
 
     /**
-     * @see #mTable
+     * @see #initMTable
      */
     fun getMTable(): Map<String, Map<String, String>> = mTable.toMap()
 
@@ -211,7 +211,7 @@ class Grammar(
 
     /**
      * Функция построения таблицы предиктивного синтаксического анализа
-     * см. 4.4.2 Функции FIRST и FOLLOW
+     * см. 4.4.3 LL(1)-грамматики
      * Ахо, Сети, Ульман Компиляторы. Принципы, технологии, инструменты. 2ed. 2008
      */
     private fun initMTable() {
