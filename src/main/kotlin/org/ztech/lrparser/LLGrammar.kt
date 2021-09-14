@@ -1,9 +1,12 @@
 package org.ztech.lrparser
 
 /**
- * Класс, определяющий грамматику
+ * LL грамматика (нисходящий разбор).
+ * Синтаксический анализатор, управляемый таблицей синтаксического анализа.
+ * Ахо, Сети, Ульман. Компилляторы. Принципы, технологии, инструменты. 2ed.
+ * (4.4.4 Нерекурсивный предиктивный синтаксический анализ)
  */
-class Grammar(
+class LLGrammar(
     /**
      * Список терминальных символов.
      */
@@ -24,7 +27,7 @@ class Grammar(
      * Стартовая продукция
      */
     val startProduction: String
-) {
+) : IGrammar {
 
     companion object {
         /**
@@ -61,14 +64,14 @@ class Grammar(
     fun getFollow(): Map<String, Set<String>> = follow.toMap()
 
     /**
-     * Таблица синтаксического разбора
+     * Таблица синтаксического разбора.
      */
-    private val mTable = mutableMapOf<String, MutableMap<String, String>>()
+    private val mTable = mutableMapOf<String, MutableMap<String, List<String>>>()
 
     /**
      * @see #initMTable
      */
-    fun getMTable(): Map<String, Map<String, String>> = mTable.toMap()
+    fun getMTable(): Map<String, Map<String, List<String>>> = mTable.toMap()
 
     init {
         // Проверяем терминальные символы
@@ -147,7 +150,7 @@ class Grammar(
                 val nTermFirst = first.getOrDefault(entry.key, mutableSetOf())
 
                 // по данной переменной будем проверять - были ли изменения в first(entry.key)
-                var nTermFirstSize = nTermFirst.size
+                val nTermFirstSize = nTermFirst.size
 
                 // Список продукций нетерминала entry.key
                 val nTermProds = entry.value
@@ -214,6 +217,19 @@ class Grammar(
      * см. 4.4.3 LL(1)-грамматики
      * Ахо, Сети, Ульман Компиляторы. Принципы, технологии, инструменты. 2ed. 2008
      */
+    /**
+     * Вспомогательная функция
+     */
+    private fun createMTableRule(term: String, prod: List<String>): List<String> {
+        return if (prod.size == 1 && EPSILON in prod) {
+            // Правило вида A -> ε
+            listOf()
+        } else {
+            // Правило вида A -> abc
+            prod
+        }
+    }
+
     private fun initMTable() {
 
         // Для каждой продукции грамматики A -> α выполним:
@@ -224,7 +240,7 @@ class Grammar(
                 val prodFirst = first(prod)
                 val recordOfA = mTable.getOrDefault(A, mutableMapOf())
                 prodFirst.forEach { a ->
-                    recordOfA[a] = "$A->${prod.joinToString("")}"
+                    recordOfA[a] = createMTableRule(A, prod)
                 }
 
                 // Если ε присутствует в FIRST(α), то для каждого b из FOLLOW(A) добавляем  A->α в M[A, b]
@@ -232,13 +248,13 @@ class Grammar(
 
                 if (EPSILON in prodFirst) {
                     followA.forEach { b ->
-                        recordOfA[b] = "$A->${prod.joinToString("")}"
+                        recordOfA[b] = createMTableRule(A, prod)
                     }
                 }
 
                 // Если ε присутствует в FIRST(α) и $ присутствует в FOLLOW(A), то добавляем A -> α в M[A, $]
                 if (EPSILON in prodFirst && EOF in followA) {
-                    recordOfA[EOF] = "$A->${prod.joinToString("")}"
+                    recordOfA[EOF] = createMTableRule(A, prod)
                 }
 
                 // В таблице разбора оставим только терминалы
@@ -311,5 +327,64 @@ class Grammar(
                 }
             }
         } while (isChanged)
+    }
+
+    override fun process(termStream: ITermStream) {
+
+        // Стек, содержащий терминальные и нетерминальные символы
+        val stack = mutableListOf(EOF, startProduction)
+
+        // Символ на вершине стека
+        var z = stack.peek()
+
+        if (!termStream.hasNext()) {
+            // Если во входном потоке символов больше нет - нужно сообщить об ошибке
+            termStream.error(null, follow.getValue(z!!))
+            return
+        }
+        var a = termStream.peek()!!
+
+        while (z != EOF) {
+            val x = z!! // чтоб не мусорить в коде лишними `!!`
+
+            // если X равен a
+            if (x == a.name) {
+                // Снимаем символ со стека и переходим к следующему символу во входном потоке
+                stack.pop()
+                termStream.next()
+                a = if (termStream.hasNext()) {
+                    termStream.peek()!!
+                } else {
+                    // Если во входном потоке символов больше нет - значит a = EOF
+                    Term(EOF)
+                }
+                z = stack.peek()
+            } else if (x in terminals) {
+                // если X - терминал - ошибка
+                termStream.error(a, setOf(x))
+                return
+            } else {
+                val tableRow = mTable.getValue(x) // строка M-таблицы для нетерминала X
+
+                // если M[X, a] - запись об ошибке
+                if (a.name !in tableRow.keys) {
+                    termStream.error(a, follow.getValue(x))
+                    return
+                }
+                // если M[X, a] = X -> Y1 Y2 Y3...YK
+                else {
+                    // выводим продукцию M[X, a]
+                    println("$x->${tableRow.getValue(a.name).joinToString(" ")} ")
+
+                    // снимаем символ со стека X
+                    stack.pop()
+
+                    // помещаем в стек YK, YK-1, ... Y1
+                    stack.addAll(tableRow.getValue(a.name).reversed())
+
+                    z = stack.peek()
+                }
+            }
+        }
     }
 }

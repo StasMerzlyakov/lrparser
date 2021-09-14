@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
-class ParserTest {
+class LLGrammarTest {
 
     /**
      * Тест на корректность проверки грамматик
@@ -14,7 +14,7 @@ class ParserTest {
 
         // Список терминальных символов пустой
         assertThrows<Exception>({ "Should throw an Exception" }) {
-            Grammar(
+            LLGrammar(
                 terminals = setOf(),
                 nonTerminals = setOf(),
                 productions = mapOf(),
@@ -24,7 +24,7 @@ class ParserTest {
 
         // Список нетерминальных символов пустой.
         assertThrows<Exception>({ "Should throw an Exception" }) {
-            Grammar(
+            LLGrammar(
                 terminals = setOf("a"),
                 nonTerminals = setOf(),
                 productions = mapOf(),
@@ -34,7 +34,7 @@ class ParserTest {
 
         // Списки нетерминальных и терминальных символов имеют пересечения.
         assertThrows<Exception>({ "Should throw an Exception" }) {
-            Grammar(
+            LLGrammar(
                 terminals = setOf("a"),
                 nonTerminals = setOf(),
                 productions = mapOf(),
@@ -44,7 +44,7 @@ class ParserTest {
 
         // Проверим что для каждого нетерминального символа имеется продукция
         assertThrows<Exception>({ "Should throw an Exception" }) {
-            Grammar(
+            LLGrammar(
                 terminals = setOf("a"),
                 nonTerminals = setOf("A", "B", "S"),
                 productions = mapOf("A" to listOf(listOf("a"))),
@@ -54,7 +54,7 @@ class ParserTest {
 
         // Левая часть продукции должна содержать только нетерминальные символы.
         assertThrows<Exception>({ "Should throw an Exception" }) {
-            Grammar(
+            LLGrammar(
                 terminals = setOf("a", "b", "s"),
                 nonTerminals = setOf("A", "B", "S"),
                 productions = mapOf(
@@ -69,7 +69,7 @@ class ParserTest {
 
         // Правая часть продукций должна состоять только из символов грамматики.
         assertThrows<Exception>({ "Should throw an Exception" }) {
-            Grammar(
+            LLGrammar(
                 terminals = setOf("a", "b", "s"),
                 nonTerminals = setOf("A", "B", "S"),
                 productions = mapOf(
@@ -83,7 +83,7 @@ class ParserTest {
 
         // Стартовая продукция должна присутствовать в списке нетерминалов.
         assertThrows<Exception>({ "Should throw an Exception" }) {
-            Grammar(
+            LLGrammar(
                 terminals = setOf("a", "b", "s"),
                 nonTerminals = setOf("A", "B", "S"),
                 productions = mapOf(
@@ -110,7 +110,7 @@ class ParserTest {
          * D -> bCD | ε
          * C -> dSe | c
          */
-        val grammar = Grammar(
+        val grammar = LLGrammar(
             terminals = setOf("a", "b", "c", "d", "e"),
             nonTerminals = setOf("S", "A", "B", "C", "D"),
             productions = mapOf(
@@ -151,7 +151,7 @@ class ParserTest {
          * T′ -> * F T′ | ε
          * F -> ( E ) | id
          */
-        val grammar = Grammar(
+        val grammar = LLGrammar(
             terminals = setOf("id", "(", ")", "*", "+"),
             nonTerminals = setOf("E", "E′", "T", "T′", "F"),
             productions = mapOf(
@@ -190,7 +190,7 @@ class ParserTest {
          * F -> ( E ) | id
          */
 
-        val grammar = Grammar(
+        val grammar = LLGrammar(
             terminals = setOf("id", "(", ")", "*", "+"),
             nonTerminals = setOf("E", "E′", "T", "T′", "F"),
             productions = mapOf(
@@ -220,7 +220,7 @@ class ParserTest {
          * T′ -> * F T′ | ε
          * F -> ( E ) | id
          */
-        val grammar = Grammar(
+        val grammar = LLGrammar(
             terminals = setOf("id", "(", ")", "*", "+"),
             nonTerminals = setOf("E", "E′", "T", "T′", "F"),
             productions = mapOf(
@@ -255,7 +255,7 @@ class ParserTest {
          * T′ -> * F T′ | ε
          * F -> ( E ) | id
          */
-        val grammar = Grammar(
+        val grammar = LLGrammar(
             terminals = setOf("id", "(", ")", "*", "+"),
             nonTerminals = setOf("E", "E′", "T", "T′", "F"),
             productions = mapOf(
@@ -270,29 +270,65 @@ class ParserTest {
 
         val mTable = grammar.getMTable()
 
-        Assertions.assertTrue(mTable.getValue("E").getValue("id") == "E->TE′")
-        Assertions.assertTrue(mTable.getValue("E").getValue("(") == "E->TE′")
+        Assertions.assertTrue(mTable.getValue("E").getValue("id").deepEqualTo(listOf("T", "E′")))
+        Assertions.assertTrue(mTable.getValue("E").getValue("(").deepEqualTo(listOf("T", "E′")))
         Assertions.assertTrue(mTable.getValue("E").size == 2)
 
-        Assertions.assertTrue(mTable.getValue("E′").getValue("+") == "E′->+TE′")
-        Assertions.assertTrue(mTable.getValue("E′").getValue(")") == "E′->ε")
-        Assertions.assertTrue(mTable.getValue("E′").getValue("$") == "E′->ε")
+        Assertions.assertTrue(mTable.getValue("E′").getValue("+").deepEqualTo(listOf("+", "T", "E′")))
+        Assertions.assertTrue(mTable.getValue("E′").getValue(")").deepEqualTo(listOf()))
+        Assertions.assertTrue(mTable.getValue("E′").getValue("$").deepEqualTo(listOf()))
         Assertions.assertTrue(mTable.getValue("E′").size == 3)
 
-        Assertions.assertTrue(mTable.getValue("T").getValue("id") == "T->FT′")
-        Assertions.assertTrue(mTable.getValue("T").getValue("(") == "T->FT′")
+        Assertions.assertTrue(mTable.getValue("T").getValue("id").deepEqualTo(listOf("F", "T′")))
+        Assertions.assertTrue(mTable.getValue("T").getValue("(").deepEqualTo(listOf("F", "T′")))
         Assertions.assertTrue(mTable.getValue("T").size == 2)
 
-        Assertions.assertTrue(mTable.getValue("T′").getValue("+") == "T′->ε")
-        Assertions.assertTrue(mTable.getValue("T′").getValue("*") == "T′->*FT′")
-        Assertions.assertTrue(mTable.getValue("T′").getValue(")") == "T′->ε")
-        Assertions.assertTrue(mTable.getValue("T′").getValue("$") == "T′->ε")
+        Assertions.assertTrue(mTable.getValue("T′").getValue("+").deepEqualTo(listOf()))
+        Assertions.assertTrue(mTable.getValue("T′").getValue("*").deepEqualTo(listOf("*", "F", "T′")))
+        Assertions.assertTrue(mTable.getValue("T′").getValue(")").deepEqualTo(listOf()))
+        Assertions.assertTrue(mTable.getValue("T′").getValue("$").deepEqualTo(listOf()))
         Assertions.assertTrue(mTable.getValue("T′").size == 4)
 
-        Assertions.assertTrue(mTable.getValue("F").getValue("id") == "F->id")
-        Assertions.assertTrue(mTable.getValue("F").getValue("(") == "F->(E)")
+        Assertions.assertTrue(mTable.getValue("F").getValue("id").deepEqualTo(listOf("id")))
+        Assertions.assertTrue(mTable.getValue("F").getValue("(").deepEqualTo(listOf("(", "E", ")")))
         Assertions.assertTrue(mTable.getValue("F").size == 2)
 
         Assertions.assertTrue(mTable.size == 5)
+    }
+
+    /**
+     * Тест на разбор входного потока
+     */
+    @Test
+    fun doProcessTest1() {
+        /**
+         * E  -> T E′
+         * E′ -> + T E′ | ε
+         * T  -> F T′
+         * T′ -> * F T′ | ε
+         * F -> ( E ) | id
+         */
+        val grammar = LLGrammar(
+            terminals = setOf("id", "(", ")", "*", "+"),
+            nonTerminals = setOf("E", "E′", "T", "T′", "F"),
+            productions = mapOf(
+                "E" to listOf(listOf("T", "E′")),
+                "E′" to listOf(listOf("+", "T", "E′"), listOf("ε")),
+                "T" to listOf(listOf("F", "T′")),
+                "T′" to listOf(listOf("*", "F", "T′"), listOf("ε")),
+                "F" to listOf(listOf("(", "E", ")"), listOf("id"))
+            ),
+            startProduction = "E"
+        )
+
+        // id + id * id$
+        val streamIterator = listOf(
+            Term("id", "1"), Term("+"),
+            Term("id", "2"), Term("*"),
+            Term("id", "3")
+        ).iterator()
+
+        val termStream = SimpleTermStream(streamIterator)
+        Assertions.assertDoesNotThrow { grammar.process(termStream) }
     }
 }
